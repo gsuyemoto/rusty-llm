@@ -1,7 +1,71 @@
 use std::collections::BTreeMap;
-// use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, Read};
+
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct Token {
+    val: String,
+    id: u32,
+    num_used: u32,
+}
+
+impl Token {
+    fn new(val: String) -> Self {
+        Token {
+            val,
+            id: 0,
+            num_used: 0,
+        }
+    }
+
+    fn inc(&mut self) {
+        self.num_used += 1;
+    }
+
+    fn id(&mut self, id: u32) {
+        self.id = id;
+    }
+}
+
+struct Vocab {
+    tokens: BTreeMap<String, Token>,
+}
+
+impl Vocab {
+    fn new() -> Self {
+        Vocab {
+            tokens: BTreeMap::new(),
+        }
+    }
+
+    fn encode(&mut self, contents: String) {
+        let mut token_temp = String::new();
+
+        for chr in contents.chars() {
+            if chr.is_alphanumeric() {
+                token_temp.push(chr);
+            } else {
+                if token_temp.len() > 0 {
+                    self.token_check(&mut token_temp);
+                } else {
+                    token_temp.push(chr);
+                    self.token_check(&mut token_temp);
+                }
+            }
+        }
+    }
+
+    fn token_check(&mut self, token: &mut String) {
+        if let Some(token_val) = self.tokens.get_mut(token) {
+            (*token_val).inc();
+        } else {
+            let new_token = Token::new(token.clone());
+            self.tokens.insert(token.clone(), new_token);
+        }
+
+        token.clear();
+    }
+}
 
 fn main() -> io::Result<()> {
     let mut file = File::open("the-verdict.txt")?;
@@ -15,64 +79,25 @@ fn main() -> io::Result<()> {
     println!("Number of chars in file: {}", num_chars);
 
     // Parse file into tokens
-    let mut vocabulary: BTreeMap<String, u32> = BTreeMap::new();
-    let mut token = String::new();
-
-    for chr in contents.chars() {
-        if chr == '?'
-            || chr == ':'
-            || chr == '!'
-            || chr == '"'
-            || chr == ','
-            || chr == '.'
-            || chr == '('
-            || chr == ')'
-            || chr == ';'
-            || chr == '-'
-            || chr == ' '
-            || chr == '\n'
-            || chr == '\''
-        {
-            if token.len() > 0 {
-                token_check(&mut token, &mut vocabulary);
-            } else {
-                token.push(chr);
-                token_check(&mut token, &mut vocabulary);
-            }
-        } else if chr == '_' {
-            if token.len() > 0 {
-                token_check(&mut token, &mut vocabulary);
-            }
-        } else {
-            token.push(chr);
-        }
-    }
+    let mut vocab = Vocab::new();
+    vocab.encode(contents);
 
     // Show number of tokens
-    println!("Number of tokens: {}", vocabulary.len());
+    println!("Number of tokens: {}", vocab.tokens.len());
 
     // Show tokens
     let mut index = 0;
-    for (key, val) in vocabulary.iter() {
-        if index == 300 {
-            break;
-        } else {
-            index += 1;
-        }
+    for (key, token) in vocab.tokens.iter_mut() {
+        token.id(index);
+        index += 1;
 
-        println!("First 100 tokens: {} -- {}", key, val);
+        if index < 100 {
+            println!(
+                "First 100 tokens: {} -- Times: {} -- ID: {}",
+                key, token.num_used, token.id
+            );
+        }
     }
 
     Ok(())
-}
-
-// fn token_check(token: &mut String, vocab: &mut HashMap<String, u32>) {
-fn token_check(token: &mut String, vocab: &mut BTreeMap<String, u32>) {
-    if let Some(token_val) = vocab.get_mut(token) {
-        *token_val = *token_val + 1;
-    } else {
-        vocab.insert(token.clone(), 1);
-    }
-
-    token.clear();
 }
