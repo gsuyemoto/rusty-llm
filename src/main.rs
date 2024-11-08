@@ -49,6 +49,10 @@ impl Vocab {
                     if chr == '-' && token_temp.ends_with('-') {
                         token_temp.pop();
                         self.token_check(&mut "--".to_string());
+
+                        if !token_temp.is_empty() {
+                            self.token_check(&mut token_temp);
+                        }
                     } else if chr == '-' || chr == '\'' {
                         token_temp.push(chr);
                     } else {
