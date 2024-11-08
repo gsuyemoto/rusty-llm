@@ -1,8 +1,16 @@
+use clap::Parser;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{self, Read};
+use std::process;
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    filename: String,
+}
+
+#[derive(Hash, Eq, PartialEq, Debug, Clone)]
 struct Token {
     val: String,
     id: u32,
@@ -29,12 +37,14 @@ impl Token {
 
 struct Vocab {
     tokens: BTreeMap<String, Token>,
+    in_order: Vec<Token>,
 }
 
 impl Vocab {
     fn new() -> Self {
         Vocab {
             tokens: BTreeMap::new(),
+            in_order: Vec::new(),
         }
     }
 
@@ -70,15 +80,23 @@ impl Vocab {
             (*token_val).inc();
         } else {
             let new_token = Token::new(token.clone());
-            self.tokens.insert(token.clone(), new_token);
+            self.tokens.insert(token.clone(), new_token.clone());
+            self.in_order.push(new_token);
         }
 
         token.clear();
     }
+
+    fn show_encoded(&self) {
+        println!("All encoded tokens in order {:?}", self.in_order);
+    }
 }
 
 fn main() -> io::Result<()> {
-    let mut file = File::open("the-verdict.txt")?;
+    let args = Args::parse();
+
+    // let mut file = File::open("the-verdict.txt")?;
+    let mut file = File::open(args.filename)?;
 
     // Read contents of file
     let mut contents = String::new();
@@ -96,18 +114,20 @@ fn main() -> io::Result<()> {
     println!("Number of tokens: {}", vocab.tokens.len());
 
     // Show tokens
-    let mut index = 0;
-    for (key, token) in vocab.tokens.iter_mut() {
-        token.id(index);
-        index += 1;
+    // let mut index = 0;
+    // for (key, token) in vocab.tokens.iter_mut() {
+    //     token.id(index);
+    //     index += 1;
 
-        if index < 400 {
-            println!(
-                "First 100 tokens: {} -- Times: {} -- ID: {}",
-                key, token.num_used, token.id
-            );
-        }
-    }
+    //     if index < 400 {
+    //         println!(
+    //             "First 100 tokens: {} -- Times: {} -- ID: {}",
+    //             key, token.num_used, token.id
+    //         );
+    //     }
+    // }
+
+    vocab.show_encoded();
 
     Ok(())
 }
