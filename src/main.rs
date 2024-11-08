@@ -46,10 +46,16 @@ impl Vocab {
                 token_temp.push(chr);
             } else {
                 if token_temp.len() > 0 {
-                    self.token_check(&mut token_temp);
+                    if chr == '-' && token_temp.ends_with('-') {
+                        token_temp.pop();
+                        self.token_check(&mut "--".to_string());
+                    } else if chr == '-' || chr == '\'' {
+                        token_temp.push(chr);
+                    } else {
+                        self.token_check(&mut token_temp);
+                    }
                 } else {
-                    token_temp.push(chr);
-                    self.token_check(&mut token_temp);
+                    self.token_check(&mut chr.to_string());
                 }
             }
         }
@@ -91,7 +97,7 @@ fn main() -> io::Result<()> {
         token.id(index);
         index += 1;
 
-        if index < 100 {
+        if index < 400 {
             println!(
                 "First 100 tokens: {} -- Times: {} -- ID: {}",
                 key, token.num_used, token.id
